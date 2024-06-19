@@ -17,7 +17,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Build
-        run: go build -o build/_output/onos-proxy ./cmd/onos-proxy
+        run: make build #go build -o build/_output/onos-proxy ./cmd/onos-proxy
 
   lint:
     runs-on: ubuntu-latest
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-      - uses: golangci/golangci-lint-action@v3.7.0
+      - uses: golangci/golangci-lint-action@v6.0.1
         with:
           version: latest
           args: -v --config ./.golangci.yml
@@ -40,7 +40,7 @@ jobs:
           go-version-file: 'go.mod'
       - name: Unit tests
         run: |
-          go test -race github.com/onosproject/onos-proxy/...
+          make test #go test -race github.com/onosproject/onos-proxy/...
 
   docker-build:
     runs-on: ubuntu-latest
@@ -51,10 +51,10 @@ jobs:
           go-version-file: 'go.mod'
       - name: Build Docker image
         run: |
-          git clone https://github.com/onosproject/build-tools.git build/build-tools
-          go mod vendor
-          docker build . -f build/onos-proxy/Dockerfile -t onosproject/onos-proxy:latest
-          rm -rf vendor
+          make images #git clone https://github.com/onosproject/build-tools.git build/build-tools
+          #go mod vendor
+          #docker build . -f build/onos-proxy/Dockerfile -t onosproject/onos-proxy:latest
+          #rm -rf vendor
 
   license-check:
     runs-on: ubuntu-latest

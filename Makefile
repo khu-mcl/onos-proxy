@@ -7,11 +7,13 @@ export GO111MODULE=on
 
 .PHONY: build
 
+TARGET := onos-proxy
+DOCKER_TAG ?= latest
 ONOS_PROXY_VERSION := latest
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
-	CGO_ENABLED=1 go build -o build/_output/onos-proxy ./cmd/onos-proxy
+	CGO_ENABLED=1 go build -o build/_output/${TARGET} ./cmd/${TARGET}
 
 build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
 include ./build/build-tools/make/onf-common.mk
@@ -25,36 +27,41 @@ mod-lint: mod-update # @HELP ensure that the required dependencies are in place
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
 test: mod-lint build linters license
-	go test -race github.com/onosproject/onos-proxy/...
+	go test -race github.com/onosproject/${TARGET}/...
 
-jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
-jenkins-test: mod-lint build linters license
-	TEST_PACKAGES=github.com/onosproject/onos-proxy/pkg/... ./build/build-tools/build/jenkins/make-unit
+#jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
+#jenkins-test: mod-lint build linters license
+#	TEST_PACKAGES=github.com/onosproject/${TARGET}/pkg/... ./build/build-tools/build/jenkins/make-unit
 
-onos-proxy-docker: # @HELP build onos-proxy base Docker image
+docker-build: # @HELP build target Docker image
+docker-build:
 	@go mod vendor
-	docker build . -f build/onos-proxy/Dockerfile \
-		-t onosproject/onos-proxy:${ONOS_PROXY_VERSION}
+	docker build . -f build/${TARGET}/Dockerfile \
+		-t ${DOCKER_REPOSITORY}${TARGET}:${DOCKER_TAG}
 	@rm -rf vendor
 
 images: # @HELP build all Docker images
-images: build onos-proxy-docker
+images: build docker-build
+
+docker-push:
+	docker push ${DOCKER_REPOSITORY}${TARGET}:${DOCKER_TAG}
+
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/onos-proxy:${ONOS_PROXY_VERSION}
+	kind load docker-image onosproject/${TARGET}:${DOCKER_TAG}
 
 all: build images
 
 publish: # @HELP publish version on github and dockerhub
-	./build/build-tools/publish-version ${VERSION} onosproject/onos-proxy
+	./build/build-tools/publish-version ${VERSION} onosproject/${TARGET}
 
-jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
-	./build/bin/push-images
-	./build/build-tools/release-merge-commit
-	./build/build-tools/build/docs/push-docs
+#jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
+#	./build/bin/push-images
+#	./build/build-tools/release-merge-commit
+#	./build/build-tools/build/docs/push-docs
 
 clean:: # @HELP remove all the build artifacts
-	rm -rf ./build/_output ./vendor ./cmd/onos-proxy/onos-proxy ./cmd/dummy/dummy
+	rm -rf ./build/_output ./vendor ./cmd/onos-proxy/${TARGET} ./cmd/dummy/dummy
 
