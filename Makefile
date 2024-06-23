@@ -51,12 +51,12 @@ docker-push:
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/${TARGET}:${DOCKER_TAG}
+	kind load docker-image ${DOCKER_REPOSITORY}${TARGET}:${DOCKER_TAG}
 
 all: build images
 
 publish: # @HELP publish version on github and dockerhub
-	./build/build-tools/publish-version ${VERSION} onosproject/${TARGET}
+	./build/build-tools/publish-version ${VERSION} ${DOCKER_REPOSITORY}${TARGET}
 
 #jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
 #	./build/bin/push-images
@@ -64,5 +64,5 @@ publish: # @HELP publish version on github and dockerhub
 #	./build/build-tools/build/docs/push-docs
 
 clean:: # @HELP remove all the build artifacts
-	rm -rf ./build/_output ./vendor ./cmd/onos-proxy/${TARGET} ./cmd/dummy/dummy
+	rm -rf ./build/_output ./vendor ./cmd/${TARGET}/${TARGET} ./cmd/dummy/dummy
 
